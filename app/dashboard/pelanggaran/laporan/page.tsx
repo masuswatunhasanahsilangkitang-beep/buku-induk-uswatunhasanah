@@ -1,5 +1,4 @@
 "use client";
-export const dynamic = "force-dynamic";
 import { useState, useEffect } from "react";
 
 export default function LaporanPelanggaranPage() {
@@ -23,8 +22,7 @@ export default function LaporanPelanggaranPage() {
           setListSantri(sData || []);
         }
 
-        const resRombel = await fetch("/api/rombel"); // Menyesuaikan jika ada API rombel, atau ambil dari santri
-        // Fallback ambil rombel unik dari santri jika endpoint rombel berbeda
+        const resRombel = await fetch("/api/rombel"); 
         const rombels = Array.from(new Set(sData?.map((s: any) => s.rombel?.id).filter(Boolean))).map(id => {
           return sData.find((s: any) => s.rombel?.id === id)?.rombel;
         });
@@ -219,7 +217,6 @@ export default function LaporanPelanggaranPage() {
           )}
 
         </div>
-
       </div>
     </div>
   );
