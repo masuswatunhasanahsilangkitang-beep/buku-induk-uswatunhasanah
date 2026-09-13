@@ -1,0 +1,608 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "binary" 
+}
+
+datasource db {
+  provider = "postgresql" 
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// MODUL SISWA
+// ==========================================
+model Santri {
+  id                  String             @id @default(uuid())
+  jenisBukuInduk      String   
+  namaLengkap         String
+  namaPanggilan       String?
+  nis                 String?
+  nisn                String             @unique
+  nisLokal            String?
+  kewarganegaraan     String
+  nik                 String             @unique
+  tanggalVerifikasi   String?
+  tempatLahir         String
+  tanggalLahir        String
+  jenisKelamin        String
+  jumlahSaudara       String?
+  anakKe              String?
+  agama               String
+  citaCita            String?
+  nomorHp             String?
+  email               String?
+  hobi                String?
+  yangMembiayai       String?
+  statusKeluarga      String?
+  praTkRa             Boolean            @default(false)
+  praPaud             Boolean            @default(false)
+  imunHepatitisB      Boolean            @default(false)
+  imunBcg             Boolean            @default(false)
+  imunDpt             Boolean            @default(false)
+  imunPolio           Boolean            @default(false)
+  imunCampak          Boolean            @default(false)
+  imunCovid           Boolean            @default(false)
+  nomorKip            String?
+  noKk                String
+  namaKepalaKeluarga  String
+  fileFotoSiswa       String?
+  fileAktaSiswa       String?
+  rombelId            String?
+  rombel              Rombel?            @relation(fields: [rombelId], references: [id], onDelete: SetNull)
+  orangTua            OrangTua[]
+  penghasilanKeluarga PenghasilanOrtu?
+  alamat              Alamat[]
+  aktivitasBelajar    AktivitasBelajar[]
+  kebutuhanKhusus     KebutuhanKhusus?
+  beasiswa            Beasiswa[]
+  prestasi            Prestasi[]
+  mutasi              MutasiSiswa?
+  kelulusan           Kelulusan?
+  absensi             AbsensiSantri[]
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  pelanggaran         Pelanggaran[]
+}
+
+model OrangTua {
+  id              String   @id @default(uuid())
+  santriId        String
+  jenis           String   
+  namaLengkap     String
+  status          String
+  kewarganegaraan String
+  nik             String?
+  tempatLahir     String?
+  tanggalLahir    String?
+  pendidikan      String?
+  pekerjaan       String?
+  nomorHp         String?
+  kkSamaAyah      Boolean  @default(false)
+  santri          Santri   @relation(fields: [santriId], references: [id], onDelete: Cascade)
+}
+
+model PenghasilanOrtu {
+  id        String   @id @default(uuid())
+  santriId  String   @unique
+  rataRata  String
+  nomorKks  String?
+  nomorPkh  String?
+  fileKk    String?
+  fileKks   String?
+  filePkh   String?
+  santri    Santri   @relation(fields: [santriId], references: [id], onDelete: Cascade)
+}
+
+model Alamat {
+  id                  String   @id @default(uuid())
+  santriId            String
+  jenisAlamat         String   
+  luarNegeri          Boolean  @default(false)
+  kepemilikanRumah    String?
+  statusTempatTinggal String?
+  provinsi            String?
+  kabupaten           String?
+  kecamatan           String?
+  kelurahan           String?
+  rt                  String?
+  rw                  String?
+  alamatLengkap       String?
+  koordinat           String?
+  kodePos             String?
+  jarak               String?
+  transportasi        String?
+  waktuTempuh         String?
+  santri              Santri   @relation(fields: [santriId], references: [id], onDelete: Cascade)
+}
+
+model AktivitasBelajar {
+  id        String   @id @default(uuid())
+  santriId  String
+  ta        String
+  tanggal   String
+  nsm       String
+  jenjang   String
+  tingkat   String
+  jurusan   String
+  rombel    String
+  status    String
+  ket       String?
+  santri    Santri   @relation(fields: [santriId], references: [id], onDelete: Cascade)
+}
+
+model KebutuhanKhusus {
+  id              String   @id @default(uuid())
+  santriId        String   @unique
+  kesulitan       String?  
+  alatBantu       String?  
+  pendampingan    String?  
+  penyesuaian     String?  
+  kategoriKhusus  String?
+  disTidakAda     Boolean  @default(true)
+  disTunaNetra    Boolean  @default(false)
+  disTunaRungu    Boolean  @default(false)
+  disTunaDaksa    Boolean  @default(false)
+  disTunaGrahita  Boolean  @default(false)
+  disTunaLaras    Boolean  @default(false)
+  disLainnya      Boolean  @default(false)
+  disTunaWicara   Boolean  @default(false)
+  santri          Santri   @relation(fields: [santriId], references: [id], onDelete: Cascade)
+}
+
+model Beasiswa {
+  id            String   @id @default(uuid())
+  santriId      String
+  tahun         String
+  kategori      String
+  namaBantuan   String
+  namaInstansi  String
+  jenisInstansi String
+  jangkaWaktu   String
+  nominal       String
+  santri        Santri   @relation(fields: [santriId], references: [id], onDelete: Cascade)
+}
+
+model Prestasi {
+  id                String   @id @default(uuid())
+  santriId          String
+  tahun             String
+  namaLomba         String
+  bidangLomba       String
+  namaPenyelenggara String
+  lombaTingkat      String
+  peringkat         String
+  santri            Santri   @relation(fields: [santriId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// MODUL GURU & TENDIK
+// ==========================================
+model Guru {
+  id                  String               @id @default(cuid())
+  namaLengkap         String
+  kategoriTugas       String
+  jabatan             String
+  nik                 String?
+  nuptk               String?
+  nip                 String?
+  jenisKelamin        String?
+  tempatLahir         String?
+  tanggalLahir        String?
+  agama               String?
+  noHp                String?
+  jenisPtk            String?
+  email               String?
+  transportasi        String?
+  jarakTempatTinggal  String?
+  waktuTempuh         String?
+  alamat              String?
+  statusPegawai       String?
+  jenisPns            String?
+  tmtPns              String?
+  noSkPns             String?
+  tglSkPns            String?
+  tmtGuru             String?
+  tmtPegawai          String?
+  npsn                String?
+  namaSekolah         String?
+  bentukSp            String?
+  provinsi            String?
+  kabupatenKota       String?
+  kecamatan           String?
+  desaKel             String?
+  namaIbuKandung      String?
+  statusPerkawinan    String?
+  namaSuamiIstri      String?
+  jumlahAnak          Int?                 @default(0)
+  sertifikasi         String?
+  jenjangSertifikasi  String?
+  nrg                 String?
+  mapelSertifikasi    String?
+  noPeserta           String?
+  lptkPenyelenggara   String?
+  noSertifikat        String?
+  tahunSertifikasi    String?
+  rombelYangDiampu    Rombel[]
+  riwayatKepegawaian  RiwayatKepegawaian[]
+  riwayatPendidikan   RiwayatPendidikan[]
+  tugasPembelajaran   TugasPembelajaran[]
+  riwayatDiklat       RiwayatDiklat[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model RiwayatKepegawaian {
+  id              String   @id @default(cuid())
+  guruId          String
+  tanggalEfektif  String?
+  fungsiJabatan   String?
+  statusPenugasan String?
+  golRuang        String?
+  statusKeaktifan String?
+  jenisSk         String?
+  tanggalSk       String?
+  penerbitSk      String?
+  guru            Guru     @relation(fields: [guruId], references: [id], onDelete: Cascade)
+}
+
+model RiwayatPendidikan {
+  id              String   @id @default(cuid())
+  guruId          String
+  jenjang         String?
+  namaSekolah     String?
+  fakultas        String?
+  jurusan         String?
+  tahunMasuk      String?
+  tahunLulus      String?
+  gelarAkademik   String?
+  statusIjazah    String?
+  guru            Guru     @relation(fields: [guruId], references: [id], onDelete: Cascade)
+}
+
+model TugasPembelajaran {
+  id            String   @id @default(cuid())
+  guruId        String
+  tahunAjaran   String?
+  namaSekolah   String?
+  penempatan    String?
+  tingkatRombel String?
+  jumlahSiswa   Int?
+  mataPelajaran String?
+  jtm           Int?
+  guru          Guru     @relation(fields: [guruId], references: [id], onDelete: Cascade)
+}
+
+model RiwayatDiklat {
+  id              String   @id @default(cuid())
+  guruId          String
+  namaPelatihan   String?
+  bidangPelatihan String?
+  penyelenggara   String?
+  tahun           String?
+  tanggalMulai    String?
+  tanggalSelesai  String?
+  noSertifikat    String?
+  jamPendidikan   Int?
+  guru            Guru     @relation(fields: [guruId], references: [id], onDelete: Cascade)
+}
+
+model MutasiSiswa {
+  id              String   @id @default(uuid())
+  santriId        String   @unique
+  jenisMutasi     String   
+  tanggalMutasi   String
+  alasan          String?
+  sekolahTujuan   String?
+  noSuratMutasi   String?
+  santri          Santri   @relation(fields: [santriId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Kelulusan {
+  id               String   @id @default(uuid())
+  santriId         String   @unique
+  tanggalLulus     String
+  tahunAjaran      String
+  noSuratKelulusan String?
+  noIjazah         String?
+  melanjutkanKe    String?
+  keterangan       String?
+  santri           Santri   @relation(fields: [santriId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Rombel {
+  id          String   @id @default(uuid())
+  namaRombel  String   
+  tingkat     String   
+  tahunAjaran String   
+  waliKelasId String?
+  waliKelas   Guru?    @relation(fields: [waliKelasId], references: [id], onDelete: SetNull)
+  siswa       Santri[] 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Kelembagaan {
+  id                       String   @id @default(uuid())
+  
+  // 1. IDENTITAS
+  nsm                      String?
+  npsn                     String?
+  namaLembaga              String?
+  namaSingkatan            String?
+  statusLembaga            String?
+  jenisLembaga             String?
+  npwp                     String?
+  telepon                  String?
+  website                  String?
+  email                    String?
+  youtube                  String?
+  instagram                String?
+  facebook                 String?
+  twitter                  String?
+  tahunBerdiri             String?
+  waktuBelajar             String?
+  statusKkm                String?
+  namaMadrasahInduk        String?
+  komiteLembaga            String?
+  punyaErkam               Boolean  @default(false)
+  diPesantren              Boolean  @default(false)
+  penyelenggaraLembaga     String?
+  namaPenyelenggara        String?
+  afiliasiKeagamaan        String?
+  nomorPokokYayasan        String?
+
+  // 2. LOKASI
+  alamatLengkap            String?
+  desaKelurahan            String?
+  kecamatan                String?
+  kabupatenKota            String?
+  provinsi                 String?
+  kodePos                  String?
+  lintang                  String?
+  bujur                    String?
+
+  // 3. GALERI (Logo & Gedung Utama)
+  fotoLogo                 String?
+  fotoGedung               String?
+
+  // 4. DOKUMEN PERIJINAN
+  skPendirian              String?
+  tanggalSkPendirian       String?
+  skIzinOperasional        String?
+  tanggalSkIzinOperasional String?
+  akreditasi               String?  // A, B, C, atau Belum Terakreditasi
+  skAkreditasi             String?
+  tahunAkreditasi          String?
+  skKemenkumham            String?  // Khusus Yayasan Swasta
+
+  // 5. PERSONEL (Pimpinan Inti)
+  namaKepalaMadrasah       String?
+  nipKepalaMadrasah        String?
+  noHpKepalaMadrasah       String?
+  namaKetuaKomite          String?
+  noHpKetuaKomite          String?
+
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+}
+
+// Model untuk Galeri Sarpras (Sistem Grid Dinamis)
+model GaleriSarpras {
+  id          String   @id @default(uuid())
+  judulFoto   String   
+  urlFoto     String   
+  keterangan  String?  
+  createdAt   DateTime @default(now())
+}
+
+model Kurikulum {
+  id             String   @id @default(uuid())
+  tahunAjaran    String   
+  jenisKurikulum String   
+  statusAktif    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model BantuanLembaga {
+  id            String   @id @default(uuid())
+  tahun         String   
+  namaBantuan   String   
+  sumberBantuan String   
+  nominalWujud  String   
+  keterangan    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Pengawas {
+  id          String   @id @default(uuid())
+  namaLengkap String
+  nip         String?
+  jabatan     String   
+  instansi    String?  
+  noHp        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==========================================
+// MODUL SARANA & PRASARANA (REVISI EMIS: 13 KATEGORI)
+// ==========================================
+
+model Lahan {
+  id                 String   @id @default(uuid())
+  namaLahan          String   
+  noSertifikat       String?
+  luas               String?  
+  luasDigunakan      String?  
+  luasBelumDigunakan String?  
+  alamatLahan        String?  
+  statusTanah        String?
+  
+  gedung             Gedung[] 
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Gedung {
+  id            String    @id @default(uuid())
+  lahanId       String?
+  lahan         Lahan?    @relation(fields: [lahanId], references: [id], onDelete: SetNull)
+  
+  namaGedung    String   
+  jumlahLantai  String?
+  kepemilikan   String?
+  tahunDibangun String?
+  panjang       String?
+  lebar         String?
+  kondisi       String   
+  
+  ruangan       Ruangan[] 
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Ruangan {
+  id           String        @id @default(uuid())
+  gedungId     String?
+  gedung       Gedung?       @relation(fields: [gedungId], references: [id], onDelete: SetNull)
+  
+  namaRuangan  String   
+  jenisRuangan String   
+  kapasitas    String?  
+  panjang      String?
+  lebar        String?
+  kondisi      String?  
+  
+  aset         AsetRuangan[] 
+  
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model AsetRuangan {
+  id           String   @id @default(uuid())
+  ruanganId    String?
+  ruangan      Ruangan? @relation(fields: [ruanganId], references: [id], onDelete: SetNull)
+  kategori     String   
+  namaAset     String   
+  jumlahTotal  Int      @default(0)
+  kondisiBaik  Int      @default(0)
+  kondisiRusak Int      @default(0)
+  keterangan   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model AsetLancar {
+  id           String   @id @default(uuid())
+  kodeBarang   String?  @unique
+  namaBarang   String
+  kategori     String
+  jumlahStok   Int      @default(0)
+  satuan       String
+  sumberDana   String?
+  keterangan   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Perpustakaan {
+  id           String   @id @default(uuid())
+  kodeBuku     String?  @unique
+  judulBuku    String
+  kategori     String
+  pengarang    String?
+  penerbit     String?
+  tahunTerbit  String?
+  jumlahTotal  Int      @default(0)
+  kondisiBaik  Int      @default(0)
+  kondisiRusak Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model PrestasiLembaga {
+  id            String   @id @default(uuid())
+  tahun         String   // Tahun perolehan (Contoh: 2025)
+  namaKejuaraan String   // Contoh: Juara 1 Lomba Sains Madrasah
+  tingkat       String   // Kabupaten, Provinsi, Nasional, Internasional
+  pencapaian    String   // Juara 1, Juara Umum, Medali Emas, dll
+  penyelenggara String?  // Instansi penyelenggara
+  createdAt     DateTime @default(now())
+}
+
+model ProgramLembaga {
+  id           String   @id @default(uuid())
+  namaProgram  String   // Contoh: Program Unggulan Tahfidz Qur'an
+  jenisProgram String   // Akademik, Keagamaan, Ekstrakurikuler, atau Layanan Khusus
+  keterangan   String?  // Deskripsi singkat mengenai program
+  createdAt    DateTime @default(now())
+}
+
+model BantuanOperasionalLembaga {
+  id          String   @id @default(uuid())
+  tahun       String   // Tahun anggaran (Contoh: 2025)
+  namaBantuan String   // Contoh: BOS Reguler Tahap I & II / PIP
+  sumberDana  String   // Pemerintah Pusat / Daerah / Yayasan / Lainnya
+  nominal     String   // Jumlah dana (Contoh: Rp 75.000.000)
+  keterangan  String?  // Catatan peruntukan dana
+  createdAt   DateTime @default(now())
+}
+
+model AbsensiSantri {
+  id            String          @id @default(uuid())
+  santriId      String
+  
+  // Relasi ke Jadwal (Opsional agar tidak merusak data yang sudah ada)
+  jadwalId      String?
+  jadwal        JadwalKegiatan? @relation(fields: [jadwalId], references: [id])
+
+  tanggal       String          // Format: YYYY-MM-DD
+  waktu         String          // Jam kehadiran (Jam Masuk)
+  waktuKeluar   String?         // Waktu Keluar (otomatis diisi saat scan kedua)
+  status        String          // "Hadir", "Sakit", dll
+  
+  jenisKegiatan String          @default("KBM Harian")
+  namaKegiatan  String?         
+  
+  keterangan    String?
+  santri        Santri          @relation(fields: [santriId], references: [id], onDelete: Cascade)
+  createdAt     DateTime        @default(now())
+}
+
+model JadwalKegiatan {
+  id            String          @id @default(cuid())
+  namaKegiatan  String          
+  jenisKegiatan String          
+  hari          String          
+  jamMulai      String          
+  jamSelesai    String          
+  isActive      Boolean         @default(true) 
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  absensi       AbsensiSantri[]
+}
+
+model Pelanggaran {
+  id          String   @id @default(cuid())
+  santriId    String
+  tanggal     String
+  kategori    String   // Ringan, Sedang, Berat
+  bentuk      String   // Misal: Terlambat, Merokok, Berkelahi, dll
+  poin        Int      @default(0)
+  tindakan    String?  // Hukuman/Pembinaan yang diberikan
+  petugas     String?  // Nama guru/guru BK yang menindak
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  santri      Santri   @relation(fields: [santriId], references: [id], onDelete: Cascade)
+}
