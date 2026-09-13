@@ -1,9 +1,11 @@
 "use client";
+import { Suspense } from "react";
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function FormTambahPelanggaranPage() {
+// 1. Fungsi utama diubah menjadi komponen internal (tanpa export default)
+function FormTambahContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const santriIdParam = searchParams.get("santriId");
@@ -161,5 +163,14 @@ export default function FormTambahPelanggaranPage() {
 
       </div>
     </div>
+  );
+}
+
+// 2. Ini adalah fungsi utama yang diekspor, membungkus komponen form dengan Suspense
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="p-12 text-center text-gray-400 font-bold animate-pulse">Memuat form pencatatan...</div>}>
+      <FormTambahContent />
+    </Suspense>
   );
 }
