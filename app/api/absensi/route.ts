@@ -158,6 +158,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: "❌ Barcode tidak dikenali sebagai Siswa maupun Guru." }, { status: 404 });
     
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: "Kesalahan server database." }, { status: 500 });
+    // TAMPILKAN ERROR ASLI KE LAYAR!
+    return NextResponse.json({ 
+      success: false, 
+      message: `DB ERROR: ${error.message || String(error)}` 
+    }, { status: 500 });
   }
 }

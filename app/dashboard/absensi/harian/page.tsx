@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode"; // Menggunakan mesin murni, bukan scanner UI
 
 export default function AbsensiHarianPage() {
   const [identifier, setIdentifier] = useState("");
@@ -8,7 +8,6 @@ export default function AbsensiHarianPage() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [riwayatHariIni, setRiwayatHariIni] = useState<any[]>([]);
   
-  // State Sesi Kegiatan & Jadwal Dinamis
   const [hariIniString, setHariIniString] = useState("");
   const [jadwalHariIni, setJadwalHariIni] = useState<any[]>([]);
   const [selectedJadwalId, setSelectedJadwalId] = useState("manual");
@@ -17,26 +16,24 @@ export default function AbsensiHarianPage() {
   
   const [isCameraActive, setIsCameraActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  const lastScanTime = useRef<number>(0);
+  const prosesAbsensiRef = useRef<any>(null); // Penyelamat agar state tidak kadaluarsa
 
-  // 1. Deteksi Hari & Ambil Jadwal Otomatis
   useEffect(() => {
     const hari = new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(new Date());
     setHariIniString(hari);
-
     const fetchJadwal = async () => {
       try {
         const res = await fetch(`/api/jadwal?hari=${hari}`);
         const json = await res.json();
         if (json.success && json.data.length > 0) {
           setJadwalHariIni(json.data);
-          // Setel otomatis ke jadwal pertama pada hari ini
           setSelectedJadwalId(json.data[0].id);
           setJenisKegiatan(json.data[0].jenisKegiatan);
           setNamaKegiatan(json.data[0].namaKegiatan);
         }
-      } catch (error) {
-        console.error("Gagal memuat jadwal:", error);
-      }
+      } catch (error) {}
     };
     fetchJadwal();
   }, []);
@@ -46,21 +43,14 @@ export default function AbsensiHarianPage() {
       const res = await fetch(`/api/absensi?jenisKegiatan=${encodeURIComponent(jenisKegiatan)}`);
       const json = await res.json();
       if (json.success) setRiwayatHariIni(json.data || []);
-    } catch (error) {
-      console.error("Gagal memuat riwayat:", error);
-    }
+    } catch (error) {}
   };
 
-  useEffect(() => {
-    fetchRiwayat();
-  }, [jenisKegiatan]);
+  useEffect(() => { fetchRiwayat(); }, [jenisKegiatan]);
 
-  // 2. Fungsi Proses Absen (Mengirim jadwalId jika ada)
+  // Fungsi Absen Utama
   const prosesAbsensi = async (idScan: string) => {
-    if (!idScan || idScan.trim() === "") {
-      setMessage({ type: "error", text: "NISN tidak boleh kosong." });
-      return; 
-    }
+    if (!idScan || idScan.trim() === "") return; 
     if (loading) return; 
 
     setLoading(true);
@@ -79,14 +69,7 @@ export default function AbsensiHarianPage() {
         })
       });
 
-      let json;
-      try {
-        json = await res.json();
-      } catch (parseError) {
-        console.error("Gagal membaca respons dari server:", parseError);
-        setMessage({ type: "error", text: "Terjadi kesalahan pada sistem (Server Error)." });
-        return; 
-      }
+      const json = await res.json();
 
       if (res.ok && json.success) {
         setMessage({ type: "success", text: json.message });
@@ -96,9 +79,8 @@ export default function AbsensiHarianPage() {
       } else {
         setMessage({ type: "error", text: json.message || "Gagal mencatat absensi." });
       }
-    } catch (error) {
-      console.error("Kesalahan jaringan:", error);
-      setMessage({ type: "error", text: "Terjadi kesalahan koneksi sistem. Cek jaringan Anda." });
+    } catch (error: any) {
+      setMessage({ type: "error", text: `Jaringan terputus: ${error.message}` });
     } finally {
       setLoading(false);
       setIdentifier("");
@@ -106,36 +88,45 @@ export default function AbsensiHarianPage() {
     }
   };
 
+  // Update ref setiap kali fungsi prosesAbsensi berubah (mencegah state kadaluarsa)
+  useEffect(() => {
+    prosesAbsensiRef.current = prosesAbsensi;
+  }, [prosesAbsensi]);
+
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    prosesAbsensi(identifier.trim());
+    if (prosesAbsensiRef.current) prosesAbsensiRef.current(identifier.trim());
   };
 
-  // Gunakan useRef untuk mencatat waktu scan terakhir tanpa me-render ulang halaman
-  const lastScanTime = useRef<number>(0);
-
+  // KAMERA MURNI TANPA BLINK
   useEffect(() => {
     if (!isCameraActive) return;
-    const scanner = new Html5QrcodeScanner(
-      "reader", 
-      { fps: 10, qrbox: { width: 250, height: 250 }, supportedScanTypes: [0] }, 
-      false
-    );
 
-    const onScanSuccess = (decodedText: string) => {
-      const now = Date.now();
-      // LOGIKA JEDA: Abaikan jika jarak antar scan kurang dari 3 detik (3000ms)
-      if (now - lastScanTime.current < 3000) return; 
-      
-      // Catat waktu sukses scan
-      lastScanTime.current = now;
-      
-      // Langsung proses absensi TANPA menghentikan/mem-pause kamera secara visual
-      prosesAbsensi(decodedText);
+    const html5QrCode = new Html5Qrcode("reader");
+
+    html5QrCode.start(
+      { facingMode: "environment" }, // Paksa gunakan kamera belakang HP
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      (decodedText) => {
+        const now = Date.now();
+        // Jeda pintar 3 detik agar tidak dobel scan
+        if (now - lastScanTime.current < 3000) return; 
+        lastScanTime.current = now;
+        
+        if (prosesAbsensiRef.current) {
+          prosesAbsensiRef.current(decodedText);
+        }
+      },
+      (errorMessage) => { /* Abaikan error cari bingkai */ }
+    ).catch((err) => {
+      setMessage({ type: "error", text: "Gagal mengakses kamera. Pastikan izin kamera diberikan." });
+    });
+
+    return () => {
+      if (html5QrCode.isScanning) {
+        html5QrCode.stop().then(() => html5QrCode.clear()).catch(() => {});
+      }
     };
-
-    scanner.render(onScanSuccess, (err) => {});
-    return () => { scanner.clear().catch(error => console.error("Failed to clear scanner", error)); };
   }, [isCameraActive]);
 
   return (
@@ -234,8 +225,9 @@ export default function AbsensiHarianPage() {
               <div className="p-5">
                 {isCameraActive ? (
                   <div className="space-y-4 text-center">
-                    <p className="text-[10px] text-gray-500 uppercase font-bold">Arahkan Kamera ke Kartu Siswa</p>
-                    <div id="reader" className="w-full bg-black rounded-lg overflow-hidden border-2 border-dashed border-gray-300 min-h-[250px]"></div>
+                    <p className="text-[10px] text-gray-500 uppercase font-bold">Arahkan Kamera ke Kartu</p>
+                    {/* Pembungkus Kamera Murni */}
+                    <div id="reader" className="w-full bg-black rounded-lg overflow-hidden border-2 border-dashed border-gray-300 min-h-[250px] relative"></div>
                     {message && (
                       <div className={`p-3 rounded-lg text-xs font-bold ${message.type === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
                         {message.text}
@@ -272,7 +264,7 @@ export default function AbsensiHarianPage() {
             </div>
           </div>
 
-          {/* TABEL RIWAYAT DENGAN JAM KELUAR */}
+          {/* TABEL RIWAYAT */}
           <div className="lg:col-span-2">
             <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 h-full">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 mb-4 gap-2">
@@ -297,7 +289,7 @@ export default function AbsensiHarianPage() {
                       <tr>
                         <th className="px-3 py-3">Masuk</th>
                         <th className="px-3 py-3">Keluar</th>
-                        <th className="px-3 py-3">Nama Santri</th>
+                        <th className="px-3 py-3">Nama Santri/Guru</th>
                         <th className="px-3 py-3">Status</th>
                       </tr>
                     </thead>
