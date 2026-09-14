@@ -106,7 +106,7 @@ export default function ScanPelanggaranPage() {
                 type="text"
                 value={manualNisn}
                 onChange={e => setManualNisn(e.target.value)}
-                placeholder="Scan Scanner USB / Masukkan NISN..."
+                placeholder="Masukkan NISN..."
                 className="w-full px-4 py-4 border-2 border-red-200 focus:border-red-500 rounded-xl text-center text-lg font-bold uppercase tracking-wider outline-none transition-all shadow-inner"
               />
               <button 
