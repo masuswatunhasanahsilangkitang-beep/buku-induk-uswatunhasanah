@@ -113,6 +113,10 @@ export default function AbsensiHarianPage() {
 
   useEffect(() => {
     if (!isCameraActive) return;
+    
+    // 1. Buat variabel pengunci agar tidak terjadi double-scan
+    let isProcessing = false;
+
     const scanner = new Html5QrcodeScanner(
       "reader", 
       { fps: 10, qrbox: { width: 250, height: 250 }, supportedScanTypes: [0] }, 
@@ -120,9 +124,19 @@ export default function AbsensiHarianPage() {
     );
 
     const onScanSuccess = (decodedText: string) => {
-      scanner.pause(true); 
-      prosesAbsensi(decodedText).then(() => {
-        setTimeout(() => scanner.resume(), 2000);
+      // 2. Jika sedang memproses absen, abaikan pindaian baru
+      if (isProcessing) return; 
+      isProcessing = true;
+
+      // 3. Pause ringan tanpa 'true' (Kamera tetap menyala, hanya berhenti baca QR)
+      try { scanner.pause(); } catch(e) {}
+
+      prosesAbsensi(decodedText).finally(() => {
+        // 4. Jeda 2 detik sebelum kamera bisa membaca QR siswa berikutnya
+        setTimeout(() => {
+          try { scanner.resume(); } catch(e) {}
+          isProcessing = false; // Buka kunci
+        }, 2000); 
       });
     };
 
