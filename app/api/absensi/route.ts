@@ -18,7 +18,12 @@ function parseTime(timeStr: string) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const tanggal = searchParams.get("tanggal") || new Date().toISOString().split("T")[0];
+    
+    // Dapatkan Tanggal Hari Ini (WIB)
+    const now = new Date();
+    const todayWIB = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+    
+    const tanggal = searchParams.get("tanggal") || todayWIB;
     const jenisKegiatan = searchParams.get("jenisKegiatan") || "KBM Harian";
 
     // Ambil data Siswa & Guru sekaligus
@@ -58,8 +63,21 @@ export async function POST(request: Request) {
     const { identifier, status = "Hadir", jenisKegiatan = "KBM Harian", namaKegiatan, jadwalId, keterangan } = body;
     if (!identifier) return NextResponse.json({ success: false, message: "Barcode kosong." }, { status: 400 });
 
-    const today = new Date().toISOString().split("T")[0];
-    const currentTime = new Date().toLocaleTimeString("id-ID", { hour12: false });
+    // ==========================================
+    // PERBAIKAN ZONA WAKTU (WIB - ASIA/JAKARTA)
+    // ==========================================
+    const now = new Date();
+    
+    // Format Tanggal: YYYY-MM-DD (WIB)
+    const today = new Intl.DateTimeFormat("en-CA", { 
+      timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" 
+    }).format(now);
+    
+    // Format Jam: HH:mm:ss (WIB 24 Jam)
+    const currentTime = new Intl.DateTimeFormat("en-GB", { 
+      timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false 
+    }).format(now);
+
     const currentMinutes = parseTime(currentTime);
 
     let jadwalAcuan = null;
