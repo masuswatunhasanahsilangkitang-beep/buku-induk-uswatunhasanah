@@ -350,10 +350,9 @@ export default function EmisBukuIndukPage() {
 
       if (response.ok && result.success) {
         alert(`Sukses! Data ${activeTab} untuk Buku Induk ${jenisBukuInduk} berhasil disimpan.`);
-        // Opsional: Redirect ke halaman daftar santri setelah sukses
         window.location.href = "/dashboard/santri";
       } else {
-        alert(`GAGAL MENYIMPAN!\n\nPenyebab:\n${result.errorDetail || result.message}`);
+        alert(`GAGAL MENYIMPAN!\n\nPenyebab:\n${result.message || result.errorDetail}`);
       }
     } catch (error) {
       alert("Koneksi terputus. Pastikan server Next.js sedang menyala (npm run dev).");
