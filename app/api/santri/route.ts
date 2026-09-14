@@ -40,7 +40,7 @@ export async function POST(request: Request) {
         jenisKelamin: String(formData.jenisKelamin || ""),
         jumlahSaudara: formData.jumlahSaudara ? String(formData.jumlahSaudara) : null,
         anakKe: formData.anakKe ? String(formData.anakKe) : null,
-        agama: String(formData.agama || ""),
+         agama: String(formData.agama || ""),
         citaCita: formData.citaCita ? String(formData.citaCita) : null,
         nomorHp: formData.nomorHp ? String(formData.nomorHp) : null,
         email: formData.email ? String(formData.email) : null,
@@ -107,11 +107,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, message: "Data berhasil disimpan.", data: safeData }, { status: 201 });
 
   } catch (error: any) {
-    let errorMsg = error?.message || String(error);
-    if (errorMsg.includes("Unique constraint failed")) {
-      errorMsg = "Data Ganda! NIK atau NISN yang Anda masukkan sudah terdaftar di database.";
+    if (error.code === "P2002") {
+      const target = error.meta?.target as string[];
+      if (target?.includes("nisn")) {
+        return NextResponse.json({ success: false, message: "Maaf, NISN tersebut sudah terdaftar pada siswa lain!" }, { status: 400 });
+      }
+      if (target?.includes("nik")) {
+        return NextResponse.json({ success: false, message: "Maaf, NIK tersebut sudah terdaftar pada orang lain!" }, { status: 400 });
+      }
+      return NextResponse.json({ success: false, message: "Maaf, data yang dimasukkan sudah pernah didaftarkan." }, { status: 400 });
     }
-    return NextResponse.json({ success: false, message: errorMsg, errorDetail: String(error) }, { status: 400 });
+    return NextResponse.json({ success: false, message: "Terjadi kesalahan server saat menyimpan data.", errorDetail: String(error) }, { status: 500 });
   }
 }
 
@@ -268,11 +274,17 @@ export async function PUT(request: Request) {
     return NextResponse.json({ success: true, message: "Data siswa berhasil diperbarui.", data: safeData }, { status: 200 });
 
   } catch (error: any) {
-    let errorMsg = error?.message || String(error);
-    if (errorMsg.includes("Unique constraint failed")) {
-      errorMsg = "Gagal memperbarui! NIK atau NISN bertabrakan dengan siswa lain.";
+    if (error.code === "P2002") {
+      const target = error.meta?.target as string[];
+      if (target?.includes("nisn")) {
+        return NextResponse.json({ success: false, message: "Gagal memperbarui! NISN tersebut sudah digunakan oleh siswa lain." }, { status: 400 });
+      }
+      if (target?.includes("nik")) {
+        return NextResponse.json({ success: false, message: "Gagal memperbarui! NIK tersebut sudah digunakan oleh orang lain." }, { status: 400 });
+      }
+      return NextResponse.json({ success: false, message: "Gagal memperbarui! Data yang Anda masukkan bertabrakan dengan siswa lain." }, { status: 400 });
     }
-    return NextResponse.json({ success: false, message: errorMsg, errorDetail: String(error) }, { status: 400 });
+    return NextResponse.json({ success: false, message: "Terjadi kesalahan server saat memperbarui data.", errorDetail: String(error) }, { status: 500 });
   }
 }
 
