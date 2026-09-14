@@ -54,11 +54,64 @@ export default function RekapAbsensiPage() {
     fetchRekap();
   }, [kategori, mode, filterValue, rombelId]);
 
+  // FUNGSI BARU: Export ke Excel (.xls)
+  const unduhExcel = () => {
+    if (dataRekap.length === 0) {
+      alert("Tidak ada data kehadiran untuk diunduh pada periode ini.");
+      return;
+    }
+
+    // Membangun tabel HTML untuk dibaca oleh Excel
+    let tableData = `<table border="1">
+      <thead>
+        <tr>
+          <th style="background-color: #f3f4f6;">No</th>
+          <th style="background-color: #f3f4f6;">Tanggal</th>
+          <th style="background-color: #f3f4f6;">Jadwal / Sesi</th>
+          <th style="background-color: #f3f4f6;">Nama Lengkap</th>
+          ${kategori === 'siswa' ? '<th style="background-color: #f3f4f6;">Rombel</th>' : ''}
+          <th style="background-color: #f3f4f6;">Jam Masuk</th>
+          <th style="background-color: #f3f4f6;">Jam Keluar</th>
+          <th style="background-color: #f3f4f6;">Status</th>
+        </tr>
+      </thead>
+      <tbody>`;
+    
+    dataRekap.forEach((item, index) => {
+      const sesi = item.jadwal ? item.jadwal.namaKegiatan : item.namaKegiatan;
+      const nama = kategori === "siswa" ? item.santri?.namaLengkap : item.guru?.namaLengkap;
+      const rombel = kategori === "siswa" ? (item.santri?.rombel?.namaRombel || "-") : "";
+      const keluar = item.waktuKeluar || "Belum Keluar";
+
+      tableData += `<tr>
+        <td>${index + 1}</td>
+        <td>${item.tanggal}</td>
+        <td>${sesi} (${item.jenisKegiatan})</td>
+        <td>${nama}</td>
+        ${kategori === 'siswa' ? `<td>${rombel}</td>` : ''}
+        <td>${item.waktu}</td>
+        <td>${keluar}</td>
+        <td>${item.status}</td>
+      </tr>`;
+    });
+    tableData += `</tbody></table>`;
+
+    // Konversi ke format .xls
+    const blob = new Blob([tableData], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Rekap_Absensi_${kategori.toUpperCase()}_${filterValue}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen font-sans text-gray-800">
       <div className="max-w-7xl mx-auto space-y-6">
         
-        {/* HEADER & PRINT BUTTON */}
+        {/* HEADER & ACTION BUTTONS */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 print:hidden">
           <div>
             <nav className="text-xs text-gray-400 space-x-1 mb-2">
@@ -67,12 +120,23 @@ export default function RekapAbsensiPage() {
             <h1 className="text-2xl font-bold text-gray-800">Laporan Rekapitulasi Absensi</h1>
             <p className="text-sm text-gray-500 mt-1">Saring dan pantau kehadiran Siswa dan Guru secara komprehensif.</p>
           </div>
-          <button 
-            onClick={() => window.print()}
-            className="px-5 py-2.5 bg-gray-800 hover:bg-black text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center gap-2"
-          >
-            🖨️ Cetak / Simpan PDF
-          </button>
+          
+          {/* GRUP TOMBOL EXPORT & PRINT */}
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={unduhExcel}
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              Export Excel
+            </button>
+            <button 
+              onClick={() => window.print()}
+              className="px-5 py-2.5 bg-gray-800 hover:bg-black text-white font-bold text-sm rounded-lg shadow transition-colors flex items-center gap-2"
+            >
+              🖨️ Cetak / Simpan PDF
+            </button>
+          </div>
         </div>
 
         {/* AREA FILTER (Sembunyi saat di-print) */}
