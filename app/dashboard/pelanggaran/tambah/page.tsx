@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
-// 1. Fungsi utama diubah menjadi komponen internal (tanpa export default)
+// 1. Fungsi utama komponen internal
 function FormTambahContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -15,7 +15,7 @@ function FormTambahContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
-    santriId: santriIdParam || "",
+    santriId: "",
     tanggal: new Date().toISOString().split("T")[0],
     kategori: "Ringan",
     bentuk: "",
@@ -24,7 +24,7 @@ function FormTambahContent() {
     petugas: ""
   });
 
-  // Tarik data detail siswa berdasarkan ID yang dibawa dari Scanner
+  // Tarik data detail siswa berdasarkan NISN/ID dari Scanner
   useEffect(() => {
     async function fetchDetailSiswa() {
       if (!santriIdParam) {
@@ -32,11 +32,21 @@ function FormTambahContent() {
         return;
       }
       try {
-        const res = await fetch(`/api/santri?id=${santriIdParam}`);
+        // PERBAIKAN: Ambil daftar santri lalu cari kecocokan NISN atau ID
+        const res = await fetch(`/api/santri`);
         const json = await res.json();
-        if (json.success && json.data) {
-          setSantriInfo(json.data);
-          setFormData(prev => ({ ...prev, santriId: santriIdParam }));
+        
+        if (json.success && json.data?.santri) {
+          // Cari siswa yang NISN atau ID-nya sama dengan hasil scan
+          const siswaDitemukan = json.data.santri.find(
+            (s: any) => s.nisn === santriIdParam || s.id === santriIdParam
+          );
+
+          if (siswaDitemukan) {
+            setSantriInfo(siswaDitemukan);
+            // PENTING: Selalu simpan UUID asli database ke dalam form, bukan NISN
+            setFormData(prev => ({ ...prev, santriId: siswaDitemukan.id }));
+          }
         }
       } catch (error) {
         console.error("Gagal memuat profil siswa:", error);
@@ -166,7 +176,7 @@ function FormTambahContent() {
   );
 }
 
-// 2. Ini adalah fungsi utama yang diekspor, membungkus komponen form dengan Suspense
+// 2. Pembungkus Suspense
 export default function Page() {
   return (
     <Suspense fallback={<div className="p-12 text-center text-gray-400 font-bold animate-pulse">Memuat form pencatatan...</div>}>
