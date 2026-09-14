@@ -32,29 +32,50 @@ export default function RekapAbsensiPage() {
     fetchData();
   }, [tanggal, jenisKegiatan]);
 
-  // Fungsi Export ke Excel (CSV)
+  // Fungsi Export ke format Asli MS Excel (.xls)
   const unduhExcel = () => {
     if (dataAbsen.length === 0) {
-      alert("Tidak ada data untuk diunduh pada tanggal ini.");
+      alert("Tidak ada data absensi untuk diunduh pada tanggal ini.");
       return;
     }
 
-    let csvContent = "data:text/csv;charset=utf-8,";
-    // Header Kolom
-    csvContent += "Tanggal,Waktu Masuk,Waktu Keluar,Nama Lengkap,Peran,Status,Kegiatan\n";
-
-    // Isi Data
-    dataAbsen.forEach((row) => {
-      const nama = `"${row.namaLengkap}"`; // Pakai kutip agar aman dari koma di nama
-      const keluar = row.waktuKeluar || "Belum Keluar";
-      csvContent += `${row.tanggal},${row.waktu},${keluar},${nama},${row.role},${row.status},${row.jenisKegiatan}\n`;
+    // Membangun struktur tabel HTML yang bisa dibaca sempurna oleh Excel
+    let tableData = `<table border="1">
+      <thead>
+        <tr>
+          <th style="background-color: #f3f4f6;">No</th>
+          <th style="background-color: #f3f4f6;">Tanggal</th>
+          <th style="background-color: #f3f4f6;">Jam Masuk</th>
+          <th style="background-color: #f3f4f6;">Jam Keluar</th>
+          <th style="background-color: #f3f4f6;">Nama Lengkap</th>
+          <th style="background-color: #f3f4f6;">Peran</th>
+          <th style="background-color: #f3f4f6;">Status Kehadiran</th>
+          <th style="background-color: #f3f4f6;">Jenis Kegiatan</th>
+        </tr>
+      </thead>
+      <tbody>`;
+    
+    dataAbsen.forEach((item, index) => {
+      const keluar = item.waktuKeluar ? item.waktuKeluar : "Belum Keluar";
+      tableData += `<tr>
+        <td>${index + 1}</td>
+        <td>${item.tanggal}</td>
+        <td>${item.waktu}</td>
+        <td>${keluar}</td>
+        <td>${item.namaLengkap}</td>
+        <td>${item.role}</td>
+        <td>${item.status}</td>
+        <td>${item.jenisKegiatan}</td>
+      </tr>`;
     });
+    tableData += `</tbody></table>`;
 
-    // Proses Download
-    const encodedUri = encodeURI(csvContent);
+    // Konversi ke format .xls
+    const blob = new Blob([tableData], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Rekap_Absensi_${jenisKegiatan.replace(/\s+/g, '_')}_${tanggal}.csv`);
+    link.href = url;
+    link.download = `Rekap_Absensi_${jenisKegiatan.replace(/\s+/g, '_')}_${tanggal}.xls`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -74,20 +95,32 @@ export default function RekapAbsensiPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         
         {/* HEADER & NAVIGASI */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Rekap & Laporan Absensi</h1>
             <p className="text-xs text-gray-500 mt-1">Pantau riwayat kehadiran siswa dan guru secara harian.</p>
           </div>
-          <div className="flex gap-3">
-            <button onClick={unduhExcel} className="px-4 py-2 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors">
-              <span>📊</span> Export Excel
+          
+          {/* GRUP TOMBOL (Ditambah flex-wrap agar tidak terpotong di layar kecil) */}
+          <div className="flex flex-wrap gap-3 w-full lg:w-auto">
+            <button 
+              onClick={unduhExcel} 
+              className="flex-1 lg:flex-none px-4 py-2 bg-emerald-500 text-white hover:bg-emerald-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-sm print:hidden"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              Export Excel
             </button>
-            <button onClick={cetakPDF} className="px-4 py-2 bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors print:hidden">
-              <span>🖨️</span> Cetak Laporan
+            <button 
+              onClick={cetakPDF} 
+              className="flex-1 lg:flex-none px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors print:hidden"
+            >
+              🖨️ Cetak / PDF
             </button>
-            <Link href="/dashboard/absensi/scanner" className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-sm transition-colors print:hidden">
-              + Buka Scanner Kamera
+            <Link 
+              href="/dashboard/absensi/scanner" 
+              className="flex-1 lg:flex-none px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-sm transition-colors flex items-center justify-center print:hidden"
+            >
+              + Buka Scanner
             </Link>
           </div>
         </div>
