@@ -227,6 +227,7 @@ model Guru {
   riwayatPendidikan   RiwayatPendidikan[]
   tugasPembelajaran   TugasPembelajaran[]
   riwayatDiklat       RiwayatDiklat[]
+  absensi             AbsensiGuru[]
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
 }
@@ -579,6 +580,27 @@ model AbsensiSantri {
   createdAt     DateTime        @default(now())
 }
 
+model AbsensiGuru {
+  id            String          @id @default(uuid())
+  guruId        String
+  
+  // Relasi ke Jadwal
+  jadwalId      String?
+  jadwal        JadwalKegiatan? @relation(fields: [jadwalId], references: [id])
+
+  tanggal       String          // Format: YYYY-MM-DD
+  waktu         String          // Jam kehadiran (Jam Masuk)
+  waktuKeluar   String?         // Waktu Keluar
+  status        String          // "Hadir", "Sakit", dll
+  
+  jenisKegiatan String          @default("KBM Harian")
+  namaKegiatan  String?         
+  
+  keterangan    String?
+  guru          Guru            @relation(fields: [guruId], references: [id], onDelete: Cascade)
+  createdAt     DateTime        @default(now())
+}
+
 model JadwalKegiatan {
   id            String          @id @default(cuid())
   namaKegiatan  String          
@@ -591,6 +613,7 @@ model JadwalKegiatan {
   updatedAt     DateTime        @updatedAt
 
   absensi       AbsensiSantri[]
+  absensiGuru   AbsensiGuru[]
 }
 
 model Pelanggaran {
