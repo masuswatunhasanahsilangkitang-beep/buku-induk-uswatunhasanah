@@ -481,7 +481,8 @@ model Ruangan {
   lebar        String?
   kondisi      String?  
   
-  aset         AsetRuangan[] 
+  aset             AsetRuangan[] 
+  barangInventaris BarangInventaris[] // <- TAMBAHKAN BARIS INI
   
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -605,4 +606,19 @@ model Pelanggaran {
   updatedAt   DateTime @updatedAt
 
   santri      Santri   @relation(fields: [santriId], references: [id], onDelete: Cascade)
+}
+
+model BarangInventaris {
+  id           String   @id @default(uuid())
+  kodeBarang   String?  @unique
+  namaBarang   String
+  kategori     String   // Bisa diisi "Aset Tetap", "Aset Lancar", dll
+  jumlahTotal  Int      @default(0)
+  kondisiBaik  Int      @default(0)
+  kondisiRusak Int      @default(0)
+  ruanganId    String?
+  ruangan      Ruangan? @relation(fields: [ruanganId], references: [id], onDelete: SetNull)
+  keterangan   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
